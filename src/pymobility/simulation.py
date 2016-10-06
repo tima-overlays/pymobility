@@ -19,12 +19,20 @@ from pymobility.models.mobility import gauss_markov, reference_point_group, \
 import numpy as np
 import logging
 from scipy.spatial.distance import cdist
+import matplotlib.animation as manimation
+
 
 logging.basicConfig(format='%(asctime)-15s - %(message)s', level=logging.INFO)
 logger = logging.getLogger("simulation")
 
 # set this to true if you want to plot node positions
 DRAW = True
+
+if DRAW:
+    FFMpegWriter = manimation.writers['ffmpeg']
+    metadata = dict(title='Movie Test', artist='Matplotlib', comment='Movie support!')
+    writer = FFMpegWriter(fps=15, metadata=metadata)
+
 
 # number of nodes
 nr_nodes = 100
@@ -49,13 +57,14 @@ RANGE = 1.
 
 if DRAW:
     import matplotlib.pyplot as plt
-    plt.ion()
+    fig = plt.figure() # plt.ion()
     ax = plt.subplot(111)
     line, = ax.plot(range(MAX_X), range(MAX_X), linestyle='', marker='.')
 
     if CALCULATE_CONTACTS:
         for l in range(100):
             ax.plot([], [], 'b-')
+#	    writer.grab_frame()
         
 step = 0
 np.random.seed(0xffff)
@@ -63,10 +72,10 @@ np.random.seed(0xffff)
 # UNCOMMENT THE MODEL YOU WANT TO USE
 
 ## Random Walk model
-rw = random_walk(nr_nodes, dimensions=(MAX_X, MAX_Y))
+#rw = random_walk(nr_nodes, dimensions=(MAX_X, MAX_Y))
 
 ## Truncated Levy Walk model
-#tlw = truncated_levy_walk(nr_nodes, dimensions=(MAX_X, MAX_Y))
+rw = tlw = truncated_levy_walk(nr_nodes, dimensions=(MAX_X, MAX_Y))
 
 ## Random Direction model
 #rd = random_direction(nr_nodes, dimensions=(MAX_X, MAX_Y))
@@ -87,25 +96,28 @@ rw = random_walk(nr_nodes, dimensions=(MAX_X, MAX_Y))
 #nr_nodes = sum(groups)
 #tvcm = tvc(groups, dimensions=(MAX_X, MAX_Y), aggregation=[0.5,0.], epoch=[100,100])
 
-for xy in rw:
+with writer.saving(fig, "writer_test.mp4", 100):
+    for xy in rw:
     
-    step += 1
-    if step%10000==0: logger.info('Step %s'% step)
-    if step < STEPS_TO_IGNORE: continue
+        step += 1
+        if step%1000==0: logger.info('Step %s'% step)
+        if step < STEPS_TO_IGNORE: continue
     
-    if DRAW:
+        if DRAW:
         
-        if CALCULATE_CONTACTS:
-            lnr = 1
-            # calculate the distance between all points represented in the xy matrix
-            d = cdist(xy,xy)
-            for (i,j) in zip(*np.where(d<RANGE)):
+            if CALCULATE_CONTACTS:
+                lnr = 1
+                # calculate the distance between all points represented in the xy matrix
+                d = cdist(xy,xy)
+                for (i,j) in zip(*np.where(d<RANGE)):
                     if j > i:
                         ax.lines[lnr].set_data([xy[i,0],xy[j,0]], [xy[i,1],xy[j,1]])
                         lnr += 1
-            for i in xrange(lnr, 100):
-                ax.lines[i].set_data([],[])
+                for i in xrange(lnr, 100):
+                    ax.lines[i].set_data([],[])
         
-        line.set_data(xy[:,0],xy[:,1])
-        plt.draw()
+            line.set_data(xy[:,0],xy[:,1])
+            writer.grab_frame()
+            plt.draw()
+
     
