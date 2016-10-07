@@ -2,7 +2,7 @@
 #
 #  Copyright (C) 2008-2010 Istituto per l'Interscambio Scientifico I.S.I.
 #  You can contact us by email (isi@isi.it) or write to:
-#  ISI Foundation, Viale S. Severo 65, 10133 Torino, Italy. 
+#  ISI Foundation, Viale S. Severo 65, 10133 Torino, Italy.
 #
 #  This program was written by André Panisson <panisson@gmail.com>
 #
@@ -20,6 +20,7 @@ import numpy as np
 import logging
 from scipy.spatial.distance import cdist
 import matplotlib.animation as manimation
+import sys
 
 
 logging.basicConfig(format='%(asctime)-15s - %(message)s', level=logging.INFO)
@@ -28,10 +29,12 @@ logger = logging.getLogger("simulation")
 # set this to true if you want to plot node positions
 DRAW = True
 
+FPG=20
+
 if DRAW:
     FFMpegWriter = manimation.writers['ffmpeg']
     metadata = dict(title='Movie Test', artist='Matplotlib', comment='Movie support!')
-    writer = FFMpegWriter(fps=15, metadata=metadata)
+    writer = FFMpegWriter(fps=FPG, metadata=metadata)
 
 
 # number of nodes
@@ -47,7 +50,7 @@ MIN_V, MAX_V = 0.1, 1.
 MAX_WT = 100.
 
 # number of steps to ignore before start plotting
-STEPS_TO_IGNORE = 10000
+STEPS_TO_IGNORE = 1000
 
 # set this to true if you want to calculate node contacts
 CALCULATE_CONTACTS = False
@@ -61,11 +64,6 @@ if DRAW:
     ax = plt.subplot(111)
     line, = ax.plot(range(MAX_X), range(MAX_X), linestyle='', marker='.')
 
-    if CALCULATE_CONTACTS:
-        for l in range(100):
-            ax.plot([], [], 'b-')
-#	    writer.grab_frame()
-        
 step = 0
 np.random.seed(0xffff)
 
@@ -98,26 +96,18 @@ rw = tlw = truncated_levy_walk(nr_nodes, dimensions=(MAX_X, MAX_Y))
 
 with writer.saving(fig, "writer_test.mp4", 100):
     for xy in rw:
-    
+
         step += 1
-        if step%1000==0: logger.info('Step %s'% step)
-        if step < STEPS_TO_IGNORE: continue
-    
-        if DRAW:
-        
-            if CALCULATE_CONTACTS:
-                lnr = 1
-                # calculate the distance between all points represented in the xy matrix
-                d = cdist(xy,xy)
-                for (i,j) in zip(*np.where(d<RANGE)):
-                    if j > i:
-                        ax.lines[lnr].set_data([xy[i,0],xy[j,0]], [xy[i,1],xy[j,1]])
-                        lnr += 1
-                for i in xrange(lnr, 100):
-                    ax.lines[i].set_data([],[])
-        
-            line.set_data(xy[:,0],xy[:,1])
+        if step % 1000 == 0:
+            logger.info('Step %s' % step)
+
+
+
+        if step >= STEPS_TO_IGNORE and DRAW:
+
+            line.set_data(xy[:, 0], xy[:, 1])
             writer.grab_frame()
             plt.draw()
 
-    
+        if step == 10*60*FPG + STEPS_TO_IGNORE:
+            sys.exit(0)
