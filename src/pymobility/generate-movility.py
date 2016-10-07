@@ -14,7 +14,7 @@ Created on Jan 24, 2012
 @contact: panisson@gmail.com
 @organization: ISI Foundation, Torino, Italy
 '''
-from pymobility.models.mobility import truncated_levy_walk
+from models.mobility import truncated_levy_walk
 import numpy as np
 import logging
 import sys
